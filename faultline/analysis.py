@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .blindspots import detect_blind_spots
 from .eval import load_cases
 from .verifier import INDEPENDENT_SIGNAL_TYPES
 
@@ -55,14 +56,16 @@ def analyze_run(run_dir: Path, cases_path: Path) -> dict[str, Any]:
                 "predicted_root_service": predicted,
                 "predicted_verified": score.get("verified"),
                 "expected_seen": expected_hypothesis is not None,
+                "expected_score": expected_hypothesis.get("score") if expected_hypothesis else None,
                 "expected_signal_types": expected_hypothesis.get("signal_types", []) if expected_hypothesis else [],
                 "expected_missing_signal_types": _missing_signals(expected_hypothesis),
+                "predicted_score": predicted_hypothesis.get("score") if predicted_hypothesis else None,
                 "predicted_signal_types": predicted_hypothesis.get("signal_types", []) if predicted_hypothesis else [],
                 "diagnosis_path": str(diagnosis_path),
             }
         )
 
-    return {
+    report = {
         "run_dir": str(run_dir),
         "cases": summary.get("cases", 0),
         "correct": summary.get("correct", 0),
@@ -70,3 +73,5 @@ def analyze_run(run_dir: Path, cases_path: Path) -> dict[str, Any]:
         "accuracy_on_attempted": summary.get("accuracy_on_attempted"),
         "misses": misses,
     }
+    report["blind_spots"] = detect_blind_spots(report)
+    return report

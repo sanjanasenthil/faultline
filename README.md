@@ -79,6 +79,16 @@ Current additions:
 - `scripts/analyze_eval.py` analyzes a saved evaluation run.
 - `tests/test_analysis.py` covers miss analysis.
 
+## Day 8 Status
+
+Blind-spot detection is documented in [docs/day8-blind-spot-detection.md](docs/day8-blind-spot-detection.md).
+
+Current additions:
+
+- `faultline/blindspots.py` converts missed diagnoses into telemetry gaps and patch recommendations.
+- `scripts/analyze_eval.py` now includes a `blind_spots` section with candidate patch targets and validation queries.
+- `tests/test_blindspots.py` covers missing-signal and invisible-service blind spots.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
