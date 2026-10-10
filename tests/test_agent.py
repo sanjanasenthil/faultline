@@ -46,6 +46,7 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(result["conclusion"]["confidence"], "medium")
         self.assertIn("metrics", result["conclusion"]["evidence"]["signal_types"])
         self.assertIn("traces", result["conclusion"]["evidence"]["signal_types"])
+        self.assertTrue(result["conclusion"]["verification"]["verified"])
         assert_no_leakage(result)
 
     def test_abstains_without_evidence(self) -> None:
@@ -53,6 +54,7 @@ class AgentTests(unittest.TestCase):
 
         self.assertIsNone(result["conclusion"]["root_service"])
         self.assertEqual(result["conclusion"]["confidence"], "abstain")
+        self.assertFalse(result["conclusion"]["verification"]["verified"])
         assert_no_leakage(result)
 
     def test_prefers_downstream_root_over_noisy_edge_symptom(self) -> None:
@@ -101,6 +103,66 @@ class AgentTests(unittest.TestCase):
 
         self.assertEqual(result["conclusion"]["root_service"], "checkout")
         self.assertEqual(result["conclusion"]["confidence"], "medium")
+        self.assertTrue(result["conclusion"]["verification"]["verified"])
+        assert_no_leakage(result)
+
+    def test_prefers_stronger_verified_downstream_candidate(self) -> None:
+        bundle = {
+            "alert": {"service": "frontend", "symptom": "checkout_errors"},
+            "anomalies": {
+                "service_errors": {
+                    "data": {
+                        "result": [
+                            {"metric": {"service_name": "checkout"}, "value": [1, "36"]},
+                            {"metric": {"service_name": "product-catalog"}, "value": [1, "1"]},
+                        ]
+                    }
+                }
+            },
+            "trace_summary": {
+                "span_calls_by_service": {
+                    "data": {
+                        "result": [
+                            {
+                                "metric": {
+                                    "service_name": "checkout",
+                                    "span_name": "POST",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "32"],
+                            },
+                            {
+                                "metric": {
+                                    "service_name": "product-catalog",
+                                    "span_name": "oteldemo.ProductCatalogService/GetProduct",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "1"],
+                            },
+                        ]
+                    }
+                }
+            },
+            "logs": {
+                "hits": {
+                    "hits": [
+                        {
+                            "_source": {
+                                "resource": {"service.name": "product-catalog"},
+                                "severity": {"text": "INFO"},
+                                "body": "Product Found",
+                            }
+                        }
+                    ]
+                }
+            },
+            "changes": {"changes": []},
+        }
+
+        result = diagnose(bundle)
+
+        self.assertEqual(result["conclusion"]["root_service"], "checkout")
+        self.assertTrue(result["conclusion"]["verification"]["verified"])
         assert_no_leakage(result)
 
 
