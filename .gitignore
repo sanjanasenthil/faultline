@@ -1,0 +1,3 @@
+vendor/opentelemetry-demo/
+__pycache__/
+.DS_Store
