@@ -26,6 +26,17 @@ Current additions:
 - `scripts/cases.py` validates cases against the live demo, applies faults, resets flags, writes decoy change records, and captures telemetry snapshots.
 - Snapshot capture records live flags, selected Prometheus metrics, recent OpenSearch logs, and a Jaeger UI reachability check.
 
+## Day 3 Status
+
+The telemetry tool layer is documented in [docs/day3-telemetry-tools.md](docs/day3-telemetry-tools.md).
+
+Current additions:
+
+- `faultline/scrubber.py` removes flagd/OpenFeature and injected-fault leakage.
+- `faultline/telemetry.py` exposes tool-shaped helpers for metrics, logs, traces, dependencies, changes, and runbooks.
+- `scripts/telemetry.py` provides a CLI wrapper for those tools.
+- `tests/test_scrubber.py` verifies scrubbed outputs do not contain known flag names, flag-service route names, or injector terms.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
@@ -52,6 +63,18 @@ Validate Day 2 cases:
 
 ```sh
 python3 scripts/cases.py validate
+```
+
+Run Day 3 scrubber tests:
+
+```sh
+python3 -m unittest discover -s tests
+```
+
+Query scrubbed telemetry:
+
+```sh
+python3 scripts/telemetry.py list-anomalies
 ```
 
 Cycle the three Day 1 faults:
