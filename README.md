@@ -58,6 +58,16 @@ Current additions:
 - `scripts/evaluate.py` provides a CLI for evaluating saved diagnosis outputs.
 - `tests/test_verifier.py` and `tests/test_eval.py` cover verification and scoring behavior.
 
+## Day 6 Status
+
+The evaluation harness is documented in [docs/day6-evaluation-harness.md](docs/day6-evaluation-harness.md).
+
+Current additions:
+
+- `faultline/harness.py` runs selected cases end-to-end and writes scored reports.
+- `scripts/run_eval.py` applies cases, diagnoses live telemetry, resets flags, and scores results.
+- `tests/test_harness.py` covers case selection, reset behavior, and summary writing.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
@@ -108,6 +118,12 @@ Evaluate saved diagnoses:
 
 ```sh
 python3 scripts/evaluate.py results/payment-failure-100-01.json
+```
+
+Run one end-to-end evaluation case:
+
+```sh
+python3 scripts/run_eval.py --case-id payment-failure-100-01 --hold-seconds 5
 ```
 
 Cycle the three Day 1 faults:
