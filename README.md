@@ -47,6 +47,17 @@ Current additions:
 - `scripts/diagnose.py` runs the agent against live telemetry or a saved snapshot.
 - `tests/test_agent.py` verifies a corroborated diagnosis and the abstention path.
 
+## Day 5 Status
+
+Evidence verification is documented in [docs/day5-evidence-verification.md](docs/day5-evidence-verification.md).
+
+Current additions:
+
+- `faultline/verifier.py` requires at least two independent non-change telemetry signal types before a conclusion is verified.
+- `faultline/eval.py` scores diagnosis JSON against known case ground truth.
+- `scripts/evaluate.py` provides a CLI for evaluating saved diagnosis outputs.
+- `tests/test_verifier.py` and `tests/test_eval.py` cover verification and scoring behavior.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
@@ -91,6 +102,12 @@ Run the Day 4 diagnosis agent:
 
 ```sh
 python3 scripts/diagnose.py live --alert-service frontend --symptom checkout_errors
+```
+
+Evaluate saved diagnoses:
+
+```sh
+python3 scripts/evaluate.py results/payment-failure-100-01.json
 ```
 
 Cycle the three Day 1 faults:
