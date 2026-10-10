@@ -9,6 +9,7 @@ from typing import Any
 
 from . import telemetry
 from .scrubber import assert_no_leakage, scrub
+from .verifier import verify_evidence
 
 
 NOISY_EDGE_SERVICES = {"frontend", "frontend-proxy", "frontend-web", "load-generator"}
@@ -159,28 +160,36 @@ def generate_hypotheses(telemetry_bundle: dict[str, Any]) -> list[dict[str, Any]
 
 def investigate(hypotheses: list[dict[str, Any]]) -> dict[str, Any]:
     root_candidates = [item for item in hypotheses if item["service"] not in NOISY_EDGE_SERVICES]
-    ordered = root_candidates + [item for item in hypotheses if item["service"] in NOISY_EDGE_SERVICES]
+    root_candidates.sort(key=lambda item: item["score"], reverse=True)
+    edge_candidates = [item for item in hypotheses if item["service"] in NOISY_EDGE_SERVICES]
+    edge_candidates.sort(key=lambda item: item["score"], reverse=True)
+    ordered = root_candidates + edge_candidates
     for hypothesis in ordered:
-        evidence_signals = [signal for signal in hypothesis["signal_types"] if signal != "changes"]
-        if len(evidence_signals) >= 2:
+        verification = verify_evidence(hypothesis)
+        if verification["verified"]:
             return {
                 "selected_service": hypothesis["service"],
                 "confidence": "medium",
-                "reason": "selected because at least two non-change telemetry signals support it",
+                "reason": verification["reason"],
                 "supporting_evidence": hypothesis,
+                "verification": verification,
             }
     if ordered:
+        verification = verify_evidence(ordered[0])
         return {
             "selected_service": ordered[0]["service"],
             "confidence": "low",
-            "reason": "selected from the strongest available signal, but corroboration is incomplete",
+            "reason": verification["reason"],
             "supporting_evidence": ordered[0],
+            "verification": verification,
         }
+    verification = verify_evidence({})
     return {
         "selected_service": None,
         "confidence": "abstain",
-        "reason": "no meaningful error, trace, log, or change evidence was found",
+        "reason": verification["reason"],
         "supporting_evidence": {},
+        "verification": verification,
     }
 
 
@@ -199,6 +208,7 @@ def diagnose(telemetry_bundle: dict[str, Any]) -> dict[str, Any]:
             "confidence": investigation["confidence"],
             "reason": investigation["reason"],
             "evidence": investigation["supporting_evidence"],
+            "verification": investigation["verification"],
         },
         "next_steps": [
             "confirm with a fresh focused trace for the selected service",
