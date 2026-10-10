@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "description": "Initial Day 2 feature-flag fault cases for the OpenTelemetry Demo.",
+  "cases": [
+    {
+      "case_id": "ad-failure-on-01",
+      "fault": {"type": "flag", "name": "adFailure", "variant": "on"},
+      "ground_truth": {"root_service": "ad", "category": "error_injection", "symptom_services": ["frontend", "ad"]},
+      "alert": {"service": "frontend", "symptom": "recommendation_or_homepage_errors"},
+      "split": "train",
+      "loop_role": "discover"
+    },
+    {
+      "case_id": "ad-failure-on-decoy-01",
+      "fault": {"type": "flag", "name": "adFailure", "variant": "on"},
+      "decoy_change": {"service": "recommendation", "kind": "deploy", "minutes_before": 4},
+      "ground_truth": {"root_service": "ad", "category": "error_injection", "symptom_services": ["frontend", "ad"]},
+      "alert": {"service": "frontend", "symptom": "recommendation_or_homepage_errors"},
+      "split": "test",
+      "loop_role": "discover"
+    },
+    {
+      "case_id": "cart-failure-25-01",
+      "fault": {"type": "flag", "name": "cartFailure", "variant": "25%"},
+      "ground_truth": {"root_service": "cart", "category": "error_injection", "symptom_services": ["frontend", "cart"]},
+      "alert": {"service": "frontend", "symptom": "cart_errors"},
+      "split": "train",
+      "loop_role": "discover"
+    },
+    {
+      "case_id": "cart-failure-50-01",
+      "fault": {"type": "flag", "name": "cartFailure", "variant": "50%"},
+      "ground_truth": {"root_service": "cart", "category": "error_injection", "symptom_services": ["frontend", "cart"]},
+      "alert": {"service": "frontend", "symptom": "cart_errors"},
+      "split": "test",
+      "loop_role": "discover"
+    },
+    {
+      "case_id": "cart-failure-100-01",
+      "fault": {"type": "flag", "name": "cartFailure", "variant": "100%"},
+      "ground_truth": {"root_service": "cart", "category": "error_injection", "symptom_services": ["frontend", "cart"]},
+      "alert": {"service": "frontend", "symptom": "cart_errors"},
+      "split": "test",
+      "loop_role": "validate"
+    },
+    {
+      "case_id": "cart-failure-100-decoy-01",
+      "fault": {"type": "flag", "name": "cartFailure", "variant": "100%"},
+      "decoy_change": {"service": "checkout", "kind": "deploy", "minutes_before": 3},
+      "ground_truth": {"root_service": "cart", "category": "error_injection", "symptom_services": ["frontend", "cart"]},
+      "alert": {"service": "frontend", "symptom": "cart_errors"},
+      "split": "test",
+      "loop_role": "validate"
+    },
+    {
+      "case_id": "payment-failure-25-01",
+      "fault": {"type": "flag", "name": "paymentFailure", "variant": "25%"},
+      "ground_truth": {"root_service": "payment", "category": "error_injection", "symptom_services": ["frontend", "checkout", "payment"]},
+      "alert": {"service": "frontend", "symptom": "checkout_errors"},
+      "split": "train",
+      "loop_role": "discover"
+    },
+    {
+      "case_id": "payment-failure-50-01",
+      "fault": {"type": "flag", "name": "paymentFailure", "variant": "50%"},
+      "ground_truth": {"root_service": "payment", "category": "error_injection", "symptom_services": ["frontend", "checkout", "payment"]},
+      "alert": {"service": "frontend", "symptom": "checkout_errors"},
+      "split": "test",
+      "loop_role": "discover"
+    },
+    {
+      "case_id": "payment-failure-100-01",
+      "fault": {"type": "flag", "name": "paymentFailure", "variant": "100%"},
+      "ground_truth": {"root_service": "payment", "category": "error_injection", "symptom_services": ["frontend", "checkout", "payment"]},
+      "alert": {"service": "frontend", "symptom": "checkout_errors"},
+      "split": "test",
+      "loop_role": "validate"
+    },
+    {
+      "case_id": "payment-failure-100-decoy-01",
+      "fault": {"type": "flag", "name": "paymentFailure", "variant": "100%"},
+      "decoy_change": {"service": "recommendation", "kind": "deploy", "minutes_before": 5},
+      "ground_truth": {"root_service": "payment", "category": "error_injection", "symptom_services": ["frontend", "checkout", "payment"]},
+      "alert": {"service": "frontend", "symptom": "checkout_errors"},
+      "split": "test",
+      "loop_role": "validate"
+    }
+  ]
+}
