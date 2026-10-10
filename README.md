@@ -37,6 +37,16 @@ Current additions:
 - `scripts/telemetry.py` provides a CLI wrapper for those tools.
 - `tests/test_scrubber.py` verifies scrubbed outputs do not contain known flag names, flag-service route names, or injector terms.
 
+## Day 4 Status
+
+The first diagnosis agent is documented in [docs/day4-diagnosis-agent.md](docs/day4-diagnosis-agent.md).
+
+Current additions:
+
+- `faultline/agent.py` triages telemetry, generates hypotheses, investigates supporting signals, and returns evidence-backed conclusions.
+- `scripts/diagnose.py` runs the agent against live telemetry or a saved snapshot.
+- `tests/test_agent.py` verifies a corroborated diagnosis and the abstention path.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
@@ -75,6 +85,12 @@ Query scrubbed telemetry:
 
 ```sh
 python3 scripts/telemetry.py list-anomalies
+```
+
+Run the Day 4 diagnosis agent:
+
+```sh
+python3 scripts/diagnose.py live --alert-service frontend --symptom checkout_errors
 ```
 
 Cycle the three Day 1 faults:
