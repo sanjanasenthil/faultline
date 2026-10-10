@@ -16,6 +16,16 @@ Current foundation:
   - `paymentFailure`
 - `scripts/flags.py` can list, toggle, cycle, and reset demo feature flags through the live flag API.
 
+## Day 2 Status
+
+The first repeatable fault-injection workflow is documented in [docs/day2-fault-injection.md](docs/day2-fault-injection.md).
+
+Current additions:
+
+- `cases/day2_feature_flags.json` defines 10 initial feature-flag incident cases.
+- `scripts/cases.py` validates cases against the live demo, applies faults, resets flags, writes decoy change records, and captures telemetry snapshots.
+- Snapshot capture records live flags, selected Prometheus metrics, recent OpenSearch logs, and a Jaeger UI reachability check.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
@@ -36,6 +46,12 @@ From the Faultline repo root, inspect flags:
 
 ```sh
 python3 scripts/flags.py list
+```
+
+Validate Day 2 cases:
+
+```sh
+python3 scripts/cases.py validate
 ```
 
 Cycle the three Day 1 faults:
