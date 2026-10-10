@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,21 @@ from .verifier import verify_evidence
 
 
 NOISY_EDGE_SERVICES = {"frontend", "frontend-proxy", "frontend-web", "load-generator"}
+SERVICE_NAME_OVERRIDES = {
+    "Ad": "ad",
+    "Cart": "cart",
+    "Checkout": "checkout",
+    "Currency": "currency",
+    "Payment": "payment",
+    "ProductCatalog": "product-catalog",
+    "Recommendation": "recommendation",
+    "Shipping": "shipping",
+}
+SYMPTOM_DOWNSTREAM_ROOTS = {
+    "cart_errors": {"cart"},
+    "checkout_errors": {"cart", "checkout", "currency", "payment", "shipping"},
+    "recommendation_or_homepage_errors": {"ad", "product-catalog", "recommendation"},
+}
 
 
 @dataclass
@@ -81,6 +97,19 @@ def _candidate(candidates: dict[str, ServiceEvidence], service: str) -> ServiceE
     return candidates.setdefault(service, ServiceEvidence(service=service))
 
 
+def downstream_service_from_span(span_name: str) -> str | None:
+    match = re.search(r"oteldemo\.([A-Za-z]+)Service/", span_name)
+    if not match:
+        return None
+    service_name = match.group(1)
+    return SERVICE_NAME_OVERRIDES.get(service_name)
+
+
+def should_credit_downstream(symptom: str, downstream_service: str) -> bool:
+    allowed = SYMPTOM_DOWNSTREAM_ROOTS.get(symptom)
+    return allowed is None or downstream_service in allowed
+
+
 def triage(telemetry_bundle: dict[str, Any]) -> dict[str, Any]:
     anomalies = telemetry_bundle.get("anomalies", {})
     service_errors = []
@@ -101,6 +130,7 @@ def triage(telemetry_bundle: dict[str, Any]) -> dict[str, Any]:
 
 def generate_hypotheses(telemetry_bundle: dict[str, Any]) -> list[dict[str, Any]]:
     candidates: dict[str, ServiceEvidence] = {}
+    symptom = telemetry_bundle.get("alert", {}).get("symptom", "unknown")
     anomalies = telemetry_bundle.get("anomalies", {})
     trace_summary = telemetry_bundle.get("trace_summary", {})
     logs = telemetry_bundle.get("logs", {})
@@ -126,6 +156,14 @@ def generate_hypotheses(telemetry_bundle: dict[str, Any]) -> list[dict[str, Any]
         evidence = _candidate(candidates, service)
         evidence.score += count * (0.15 if service in NOISY_EDGE_SERVICES else 0.75)
         evidence.traces.append(f"{span_name} returned errors {count:g} times")
+        downstream_service = downstream_service_from_span(span_name)
+        if downstream_service and downstream_service != service:
+            if not should_credit_downstream(symptom, downstream_service):
+                continue
+            downstream = _candidate(candidates, downstream_service)
+            downstream.score += 50 + count * 3.0
+            downstream.traces.append(f"{service} saw downstream {span_name} errors {count:g} times")
+            downstream.metrics.append(f"{downstream_service} is implicated by downstream error spans")
 
     for hit in logs.get("hits", {}).get("hits", []):
         service = _service_from_log(hit)
@@ -155,7 +193,7 @@ def generate_hypotheses(telemetry_bundle: dict[str, Any]) -> list[dict[str, Any]
         ),
         reverse=True,
     )
-    return hypotheses[:8]
+    return hypotheses[:20]
 
 
 def investigate(hypotheses: list[dict[str, Any]]) -> dict[str, Any]:

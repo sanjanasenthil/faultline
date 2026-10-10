@@ -68,6 +68,17 @@ Current additions:
 - `scripts/run_eval.py` applies cases, diagnoses live telemetry, resets flags, and scores results.
 - `tests/test_harness.py` covers case selection, reset behavior, and summary writing.
 
+## Day 7 Status
+
+Baseline analysis is documented in [docs/day7-baseline-analysis.md](docs/day7-baseline-analysis.md).
+
+Current additions:
+
+- `faultline/agent.py` now uses alert-aware downstream scoring so unrelated downstream traffic does not dominate every incident.
+- `faultline/analysis.py` explains incorrect evaluation results by showing whether the expected service was visible and which evidence types were missing.
+- `scripts/analyze_eval.py` analyzes a saved evaluation run.
+- `tests/test_analysis.py` covers miss analysis.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
@@ -124,6 +135,12 @@ Run one end-to-end evaluation case:
 
 ```sh
 python3 scripts/run_eval.py --case-id payment-failure-100-01 --hold-seconds 5
+```
+
+Analyze an evaluation run:
+
+```sh
+python3 scripts/analyze_eval.py results/eval-runs/<timestamp>
 ```
 
 Cycle the three Day 1 faults:

@@ -2,11 +2,21 @@ from __future__ import annotations
 
 import unittest
 
-from faultline.agent import diagnose
+from faultline.agent import diagnose, downstream_service_from_span, should_credit_downstream
 from faultline.scrubber import assert_no_leakage
 
 
 class AgentTests(unittest.TestCase):
+    def test_extracts_downstream_service_from_span_name(self) -> None:
+        self.assertEqual(downstream_service_from_span("oteldemo.PaymentService/Charge"), "payment")
+        self.assertEqual(downstream_service_from_span("oteldemo.ProductCatalogService/GetProduct"), "product-catalog")
+        self.assertIsNone(downstream_service_from_span("POST"))
+
+    def test_filters_downstream_credit_by_alert_symptom(self) -> None:
+        self.assertTrue(should_credit_downstream("checkout_errors", "payment"))
+        self.assertFalse(should_credit_downstream("checkout_errors", "product-catalog"))
+        self.assertTrue(should_credit_downstream("recommendation_or_homepage_errors", "product-catalog"))
+
     def test_selects_service_with_corroborated_metric_and_trace_evidence(self) -> None:
         bundle = {
             "alert": {"service": "frontend", "symptom": "checkout_errors"},
@@ -162,6 +172,116 @@ class AgentTests(unittest.TestCase):
         result = diagnose(bundle)
 
         self.assertEqual(result["conclusion"]["root_service"], "checkout")
+        self.assertTrue(result["conclusion"]["verification"]["verified"])
+        assert_no_leakage(result)
+
+    def test_credits_downstream_service_named_in_error_span(self) -> None:
+        bundle = {
+            "alert": {"service": "frontend", "symptom": "checkout_errors"},
+            "anomalies": {
+                "service_errors": {
+                    "data": {
+                        "result": [
+                            {"metric": {"service_name": "checkout"}, "value": [1, "36"]},
+                        ]
+                    }
+                }
+            },
+            "trace_summary": {
+                "span_calls_by_service": {
+                    "data": {
+                        "result": [
+                            {
+                                "metric": {
+                                    "service_name": "checkout",
+                                    "span_name": "oteldemo.PaymentService/Charge",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "20"],
+                            },
+                            {
+                                "metric": {
+                                    "service_name": "checkout",
+                                    "span_name": "POST",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "32"],
+                            },
+                        ]
+                    }
+                }
+            },
+            "logs": {"hits": {"hits": []}},
+            "changes": {"changes": []},
+        }
+
+        result = diagnose(bundle)
+
+        self.assertEqual(result["conclusion"]["root_service"], "payment")
+        self.assertTrue(result["conclusion"]["verification"]["verified"])
+        assert_no_leakage(result)
+
+    def test_checkout_alert_ignores_unrelated_product_catalog_noise(self) -> None:
+        bundle = {
+            "alert": {"service": "frontend", "symptom": "checkout_errors"},
+            "anomalies": {
+                "service_errors": {
+                    "data": {
+                        "result": [
+                            {"metric": {"service_name": "checkout"}, "value": [1, "36"]},
+                            {"metric": {"service_name": "payment"}, "value": [1, "29"]},
+                            {"metric": {"service_name": "product-catalog"}, "value": [1, "1"]},
+                        ]
+                    }
+                }
+            },
+            "trace_summary": {
+                "span_calls_by_service": {
+                    "data": {
+                        "result": [
+                            {
+                                "metric": {
+                                    "service_name": "frontend",
+                                    "span_name": "oteldemo.ProductCatalogService/GetProduct",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "354"],
+                            },
+                            {
+                                "metric": {
+                                    "service_name": "frontend",
+                                    "span_name": "oteldemo.ProductCatalogService/ListProducts",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "32"],
+                            },
+                            {
+                                "metric": {
+                                    "service_name": "frontend",
+                                    "span_name": "oteldemo.CheckoutService/PlaceOrder",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "4"],
+                            },
+                            {
+                                "metric": {
+                                    "service_name": "checkout",
+                                    "span_name": "oteldemo.PaymentService/Charge",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "20"],
+                            },
+                        ]
+                    }
+                }
+            },
+            "logs": {"hits": {"hits": []}},
+            "changes": {"changes": []},
+        }
+
+        result = diagnose(bundle)
+
+        self.assertEqual(result["conclusion"]["root_service"], "payment")
         self.assertTrue(result["conclusion"]["verification"]["verified"])
         assert_no_leakage(result)
 
