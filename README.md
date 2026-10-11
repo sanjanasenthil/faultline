@@ -89,6 +89,16 @@ Current additions:
 - `scripts/analyze_eval.py` now includes a `blind_spots` section with candidate patch targets and validation queries.
 - `tests/test_blindspots.py` covers missing-signal and invisible-service blind spots.
 
+## Day 9 Status
+
+Causal ranking is documented in [docs/day9-causal-ranking.md](docs/day9-causal-ranking.md).
+
+Current additions:
+
+- `faultline/agent.py` records downstream causal hints when one service observes a named downstream service failing.
+- Investigation now uses a causal score so internal downstream-failure evidence can outrank raw symptom volume.
+- `tests/test_agent.py` covers the Day 8 payment-vs-checkout ranking miss.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:

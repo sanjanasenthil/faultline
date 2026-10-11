@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from faultline.agent import diagnose, downstream_service_from_span, should_credit_downstream
+from faultline.agent import causal_score, diagnose, downstream_service_from_span, should_credit_downstream
 from faultline.scrubber import assert_no_leakage
 
 
@@ -283,6 +283,91 @@ class AgentTests(unittest.TestCase):
 
         self.assertEqual(result["conclusion"]["root_service"], "payment")
         self.assertTrue(result["conclusion"]["verification"]["verified"])
+        assert_no_leakage(result)
+
+    def test_causal_score_prefers_downstream_root_over_symptom_volume(self) -> None:
+        checkout = {
+            "service": "checkout",
+            "score": 138.5,
+            "signal_types": ["metrics", "traces"],
+            "traces": ["POST returned errors 36 times", "frontend saw downstream oteldemo.CheckoutService/PlaceOrder errors 5 times"],
+            "causal_hints": ["frontend observed checkout failing through oteldemo.CheckoutService/PlaceOrder"],
+        }
+        payment = {
+            "service": "payment",
+            "score": 87.5,
+            "signal_types": ["metrics", "traces"],
+            "traces": [
+                "charge returned errors 1 times",
+                "checkout saw downstream oteldemo.PaymentService/Charge errors 1 times",
+            ],
+            "causal_hints": ["checkout observed payment failing through oteldemo.PaymentService/Charge"],
+        }
+
+        self.assertGreater(causal_score(payment), causal_score(checkout))
+
+    def test_prefers_payment_when_checkout_has_more_symptom_volume(self) -> None:
+        bundle = {
+            "alert": {"service": "frontend", "symptom": "checkout_errors"},
+            "anomalies": {
+                "service_errors": {
+                    "data": {
+                        "result": [
+                            {"metric": {"service_name": "checkout"}, "value": [1, "42"]},
+                            {"metric": {"service_name": "payment"}, "value": [1, "33"]},
+                        ]
+                    }
+                }
+            },
+            "trace_summary": {
+                "span_calls_by_service": {
+                    "data": {
+                        "result": [
+                            {
+                                "metric": {
+                                    "service_name": "checkout",
+                                    "span_name": "POST",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "36"],
+                            },
+                            {
+                                "metric": {
+                                    "service_name": "frontend",
+                                    "span_name": "oteldemo.CheckoutService/PlaceOrder",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "5"],
+                            },
+                            {
+                                "metric": {
+                                    "service_name": "checkout",
+                                    "span_name": "oteldemo.PaymentService/Charge",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "1"],
+                            },
+                            {
+                                "metric": {
+                                    "service_name": "payment",
+                                    "span_name": "charge",
+                                    "status_code": "STATUS_CODE_ERROR",
+                                },
+                                "value": [1, "1"],
+                            },
+                        ]
+                    }
+                }
+            },
+            "logs": {"hits": {"hits": []}},
+            "changes": {"changes": []},
+        }
+
+        result = diagnose(bundle)
+
+        self.assertEqual(result["conclusion"]["root_service"], "payment")
+        self.assertTrue(result["conclusion"]["verification"]["verified"])
+        self.assertIn("causal_hints", result["conclusion"]["evidence"])
         assert_no_leakage(result)
 
 

@@ -29,6 +29,7 @@ SYMPTOM_DOWNSTREAM_ROOTS = {
     "checkout_errors": {"cart", "checkout", "currency", "payment", "shipping"},
     "recommendation_or_homepage_errors": {"ad", "product-catalog", "recommendation"},
 }
+GENERIC_SYMPTOM_SPANS = {"GET", "POST"}
 
 
 @dataclass
@@ -39,6 +40,7 @@ class ServiceEvidence:
     traces: list[str] = field(default_factory=list)
     logs: list[str] = field(default_factory=list)
     changes: list[str] = field(default_factory=list)
+    causal_hints: list[str] = field(default_factory=list)
 
     def signal_types(self) -> list[str]:
         signals = []
@@ -56,6 +58,7 @@ class ServiceEvidence:
         return {
             "service": self.service,
             "score": round(self.score, 2),
+            "causal_hints": self.causal_hints[:5],
             "signal_types": self.signal_types(),
             "metrics": self.metrics[:5],
             "traces": self.traces[:5],
@@ -108,6 +111,20 @@ def downstream_service_from_span(span_name: str) -> str | None:
 def should_credit_downstream(symptom: str, downstream_service: str) -> bool:
     allowed = SYMPTOM_DOWNSTREAM_ROOTS.get(symptom)
     return allowed is None or downstream_service in allowed
+
+
+def causal_score(hypothesis: dict[str, Any]) -> float:
+    score = float(hypothesis.get("score", 0.0))
+    for hint in hypothesis.get("causal_hints", []):
+        observer = hint.split(" observed ", 1)[0]
+        score += 25.0 if observer in NOISY_EDGE_SERVICES else 120.0
+    generic_symptom_count = sum(
+        1
+        for trace in hypothesis.get("traces", [])
+        if any(trace.startswith(f"{span} returned errors") for span in GENERIC_SYMPTOM_SPANS)
+    )
+    score -= generic_symptom_count * 15.0
+    return score
 
 
 def triage(telemetry_bundle: dict[str, Any]) -> dict[str, Any]:
@@ -164,6 +181,7 @@ def generate_hypotheses(telemetry_bundle: dict[str, Any]) -> list[dict[str, Any]
             downstream.score += 50 + count * 3.0
             downstream.traces.append(f"{service} saw downstream {span_name} errors {count:g} times")
             downstream.metrics.append(f"{downstream_service} is implicated by downstream error spans")
+            downstream.causal_hints.append(f"{service} observed {downstream_service} failing through {span_name}")
 
     for hit in logs.get("hits", {}).get("hits", []):
         service = _service_from_log(hit)
@@ -198,7 +216,7 @@ def generate_hypotheses(telemetry_bundle: dict[str, Any]) -> list[dict[str, Any]
 
 def investigate(hypotheses: list[dict[str, Any]]) -> dict[str, Any]:
     root_candidates = [item for item in hypotheses if item["service"] not in NOISY_EDGE_SERVICES]
-    root_candidates.sort(key=lambda item: item["score"], reverse=True)
+    root_candidates.sort(key=causal_score, reverse=True)
     edge_candidates = [item for item in hypotheses if item["service"] in NOISY_EDGE_SERVICES]
     edge_candidates.sort(key=lambda item: item["score"], reverse=True)
     ordered = root_candidates + edge_candidates
