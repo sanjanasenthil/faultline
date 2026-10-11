@@ -109,6 +109,16 @@ Current additions:
 - `scripts/analyze_eval.py` output now includes `patch_plan` alongside `blind_spots`.
 - `tests/test_patches.py` covers instrumentation and agent-ranking patch plans.
 
+## Day 11 Status
+
+Patch artifacts are documented in [docs/day11-patch-artifacts.md](docs/day11-patch-artifacts.md).
+
+Current additions:
+
+- `faultline/artifacts.py` renders patch plans into human-reviewable markdown.
+- `scripts/write_patch_plan.py` writes `patch-plan.md` for a saved evaluation run.
+- `tests/test_patch_artifacts.py` covers patch artifact rendering and writing.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
@@ -171,6 +181,12 @@ Analyze an evaluation run:
 
 ```sh
 python3 scripts/analyze_eval.py results/eval-runs/<timestamp>
+```
+
+Write a markdown patch-plan artifact:
+
+```sh
+python3 scripts/write_patch_plan.py results/eval-runs/<timestamp>
 ```
 
 Cycle the three Day 1 faults:
