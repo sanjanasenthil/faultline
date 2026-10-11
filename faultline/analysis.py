@@ -8,6 +8,7 @@ from typing import Any
 
 from .blindspots import detect_blind_spots
 from .eval import load_cases
+from .patches import build_patch_plan
 from .verifier import INDEPENDENT_SIGNAL_TYPES
 
 
@@ -74,4 +75,5 @@ def analyze_run(run_dir: Path, cases_path: Path) -> dict[str, Any]:
         "misses": misses,
     }
     report["blind_spots"] = detect_blind_spots(report)
+    report["patch_plan"] = build_patch_plan(report)
     return report

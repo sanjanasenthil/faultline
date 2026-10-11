@@ -99,6 +99,16 @@ Current additions:
 - Investigation now uses a causal score so internal downstream-failure evidence can outrank raw symptom volume.
 - `tests/test_agent.py` covers the Day 8 payment-vs-checkout ranking miss.
 
+## Day 10 Status
+
+Patch planning is documented in [docs/day10-patch-plans.md](docs/day10-patch-plans.md).
+
+Current additions:
+
+- `faultline/patches.py` converts blind spots into concrete patch plans.
+- `scripts/analyze_eval.py` output now includes `patch_plan` alongside `blind_spots`.
+- `tests/test_patches.py` covers instrumentation and agent-ranking patch plans.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
