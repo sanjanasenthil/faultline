@@ -119,6 +119,16 @@ Current additions:
 - `scripts/write_patch_plan.py` writes `patch-plan.md` for a saved evaluation run.
 - `tests/test_patch_artifacts.py` covers patch artifact rendering and writing.
 
+## Day 12 Status
+
+Patch bundles are documented in [docs/day12-patch-bundles.md](docs/day12-patch-bundles.md).
+
+Current additions:
+
+- `faultline/artifacts.py` now writes patch bundles with a markdown plan, JSON manifest, and validation script.
+- `scripts/write_patch_bundle.py` creates a bundle from a saved evaluation run.
+- `tests/test_patch_artifacts.py` covers manifest generation, validation script rendering, and bundle writing.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
@@ -187,6 +197,12 @@ Write a markdown patch-plan artifact:
 
 ```sh
 python3 scripts/write_patch_plan.py results/eval-runs/<timestamp>
+```
+
+Write a patch bundle:
+
+```sh
+python3 scripts/write_patch_bundle.py results/eval-runs/<timestamp>
 ```
 
 Cycle the three Day 1 faults:
