@@ -129,6 +129,16 @@ Current additions:
 - `scripts/write_patch_bundle.py` creates a bundle from a saved evaluation run.
 - `tests/test_patch_artifacts.py` covers manifest generation, validation script rendering, and bundle writing.
 
+## Day 13 Status
+
+AWS handoff artifacts are documented in [docs/day13-aws-handoff.md](docs/day13-aws-handoff.md).
+
+Current additions:
+
+- `faultline/aws.py` builds an AWS handoff manifest, S3 upload script, and README.
+- `scripts/write_aws_handoff.py` creates AWS handoff files for a saved evaluation run.
+- `tests/test_aws.py` covers AWS handoff rendering and writing.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
@@ -203,6 +213,12 @@ Write a patch bundle:
 
 ```sh
 python3 scripts/write_patch_bundle.py results/eval-runs/<timestamp>
+```
+
+Write AWS handoff files:
+
+```sh
+python3 scripts/write_aws_handoff.py results/eval-runs/<timestamp>
 ```
 
 Cycle the three Day 1 faults:
