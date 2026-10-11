@@ -139,6 +139,16 @@ Current additions:
 - `scripts/write_aws_handoff.py` creates AWS handoff files for a saved evaluation run.
 - `tests/test_aws.py` covers AWS handoff rendering and writing.
 
+## Day 14 Status
+
+The final demo report is documented in [docs/day14-final-demo.md](docs/day14-final-demo.md).
+
+Current additions:
+
+- `faultline/report.py` renders a final MVP demo report from an analyzed evaluation run.
+- `scripts/write_demo_report.py` writes `final-demo-report.md` for a saved run.
+- `tests/test_report.py` covers final report rendering and writing.
+
 ## Quick Start
 
 Clone the upstream demo into `vendor/`:
@@ -219,6 +229,12 @@ Write AWS handoff files:
 
 ```sh
 python3 scripts/write_aws_handoff.py results/eval-runs/<timestamp>
+```
+
+Write the final demo report:
+
+```sh
+python3 scripts/write_demo_report.py results/eval-runs/<timestamp>
 ```
 
 Cycle the three Day 1 faults:
