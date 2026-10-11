@@ -131,13 +131,16 @@ Current additions:
 
 ## Day 13 Status
 
-AWS handoff artifacts are documented in [docs/day13-aws-handoff.md](docs/day13-aws-handoff.md).
+AWS deployment artifacts are documented in [docs/day13-aws-handoff.md](docs/day13-aws-handoff.md) and [docs/aws-deployment.md](docs/aws-deployment.md).
 
 Current additions:
 
 - `faultline/aws.py` builds an AWS handoff manifest, S3 upload script, and README.
 - `scripts/write_aws_handoff.py` creates AWS handoff files for a saved evaluation run.
 - `tests/test_aws.py` covers AWS handoff rendering and writing.
+- `infra/aws/cloudformation/faultline-mvp.json` deploys S3, CloudWatch Logs, IAM, and CodeBuild for AWS validation.
+- `infra/aws/codebuild/buildspec.yml` runs Faultline checks inside AWS CodeBuild.
+- `scripts/validate_aws_template.py` checks the local AWS template shape before deployment.
 
 ## Day 14 Status
 
@@ -229,6 +232,12 @@ Write AWS handoff files:
 
 ```sh
 python3 scripts/write_aws_handoff.py results/eval-runs/<timestamp>
+```
+
+Validate the AWS deployment template:
+
+```sh
+python3 scripts/validate_aws_template.py
 ```
 
 Write the final demo report:

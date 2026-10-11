@@ -52,15 +52,17 @@ def render_demo_report(
     aws_dir = aws_handoff_dir or run_dir / "aws-handoff"
     verification = [
         "python3 -m unittest discover -s tests",
-        "python3 -m py_compile scripts/flags.py scripts/cases.py scripts/telemetry.py scripts/diagnose.py scripts/evaluate.py scripts/run_eval.py scripts/analyze_eval.py scripts/write_patch_plan.py scripts/write_patch_bundle.py scripts/write_aws_handoff.py scripts/write_demo_report.py faultline/scrubber.py faultline/telemetry.py faultline/agent.py faultline/verifier.py faultline/eval.py faultline/harness.py faultline/analysis.py faultline/blindspots.py faultline/patches.py faultline/artifacts.py faultline/aws.py faultline/report.py",
+        "python3 -m py_compile scripts/flags.py scripts/cases.py scripts/telemetry.py scripts/diagnose.py scripts/evaluate.py scripts/run_eval.py scripts/analyze_eval.py scripts/write_patch_plan.py scripts/write_patch_bundle.py scripts/write_aws_handoff.py scripts/write_demo_report.py scripts/validate_aws_template.py faultline/scrubber.py faultline/telemetry.py faultline/agent.py faultline/verifier.py faultline/eval.py faultline/harness.py faultline/analysis.py faultline/blindspots.py faultline/patches.py faultline/artifacts.py faultline/aws.py faultline/report.py",
         f"python3 scripts/analyze_eval.py {run_dir}",
         f"python3 scripts/write_patch_bundle.py {run_dir}",
         f"python3 scripts/write_aws_handoff.py {run_dir}",
+        "python3 scripts/validate_aws_template.py",
     ]
     blockers = [
         "Live Docker/OpenTelemetry Demo verification still depends on Docker being available locally.",
         "Direct git push is blocked on this machine by missing GitHub HTTPS credentials.",
-        "AWS is optional for the MVP; the handoff files prepare S3 archival but do not provision cloud resources.",
+        "AWS credentials are required to deploy the CloudFormation stack and start CodeBuild.",
+        "The AWS MVP runs validation in CodeBuild; hosting the full OpenTelemetry Demo on ECS or EC2 is still a future extension.",
     ]
     lines = [
         "# Faultline Final Demo Report",
@@ -69,7 +71,7 @@ def render_demo_report(
         "",
         "## MVP Loop",
         "",
-        "Faultline now demonstrates the loop: inject a known fault, diagnose from telemetry, score the result, identify blind spots, create patch plans, package patch bundles, and prepare an optional AWS handoff.",
+        "Faultline now demonstrates the loop: inject a known fault, diagnose from telemetry, score the result, identify blind spots, create patch plans, package patch bundles, and run validation through an AWS deployment path.",
         "",
         "## Evaluation Summary",
         "",
@@ -86,7 +88,12 @@ def render_demo_report(
         "",
         "## AWS Status",
         "",
-        "AWS is not required for the local MVP. The project is AWS-ready through handoff artifacts:",
+        "AWS is required for the project deployment path. The repository includes a CloudFormation stack for S3, CloudWatch Logs, IAM, and CodeBuild:",
+        "- `infra/aws/cloudformation/faultline-mvp.json`",
+        "- `infra/aws/codebuild/buildspec.yml`",
+        "- `docs/aws-deployment.md`",
+        "",
+        "The saved run also includes handoff artifacts:",
         f"- `{aws_dir / 'aws-manifest.json'}`",
         f"- `{aws_dir / 'upload-to-s3.sh'}`",
         f"- `{aws_dir / 'README.md'}`",
@@ -106,7 +113,7 @@ def render_demo_report(
         "3. Show the saved evaluation summary and diagnosis JSON under the run directory.",
         "4. Run `scripts/analyze_eval.py` to explain the miss and blind spots.",
         "5. Show `patch-bundle/patch-plan.md` as the next engineering action.",
-        "6. Explain that AWS is optional and represented by `aws-handoff/` for S3 archival.",
+        "6. Show `infra/aws/cloudformation/faultline-mvp.json` and explain the CodeBuild plus S3 AWS deployment path.",
         "",
     ]
     return "\n".join(lines)

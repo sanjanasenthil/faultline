@@ -37,7 +37,7 @@ class DemoReportTests(unittest.TestCase):
 
         self.assertIn("# Faultline Final Demo Report", report)
         self.assertIn("expected `payment`, predicted `checkout`", report)
-        self.assertIn("AWS is not required", report)
+        self.assertIn("AWS is required", report)
         self.assertIn("Demo Script", report)
 
     def test_writes_final_demo_report(self) -> None:

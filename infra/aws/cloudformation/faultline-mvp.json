@@ -1,0 +1,195 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Faultline MVP AWS deployment: S3 artifacts, CloudWatch logs, and CodeBuild validation runner.",
+  "Parameters": {
+    "ProjectName": {
+      "Type": "String",
+      "Default": "faultline",
+      "AllowedPattern": "[a-zA-Z0-9-]+"
+    },
+    "RepositoryUrl": {
+      "Type": "String",
+      "Default": "https://github.com/sanjanasenthil/faultline.git"
+    },
+    "RepositoryBranch": {
+      "Type": "String",
+      "Default": "main"
+    }
+  },
+  "Resources": {
+    "ArtifactBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        }
+      }
+    },
+    "BuildLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/codebuild/${ProjectName}-validation"
+        },
+        "RetentionInDays": 14
+      }
+    },
+    "CodeBuildRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "codebuild.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "FaultlineCodeBuildAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "${BuildLogGroup.Arn}:*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetBucketLocation",
+                    "s3:ListBucket"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "ArtifactBucket",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "${ArtifactBucket.Arn}/*"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ValidationProject": {
+      "Type": "AWS::CodeBuild::Project",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${ProjectName}-validation"
+        },
+        "Description": "Runs Faultline validation on AWS and stores build artifacts in S3.",
+        "ServiceRole": {
+          "Fn::GetAtt": [
+            "CodeBuildRole",
+            "Arn"
+          ]
+        },
+        "Artifacts": {
+          "Type": "S3",
+          "Location": {
+            "Ref": "ArtifactBucket"
+          },
+          "Path": "codebuild-artifacts",
+          "Packaging": "ZIP"
+        },
+        "Environment": {
+          "Type": "LINUX_CONTAINER",
+          "Image": "aws/codebuild/standard:7.0",
+          "ComputeType": "BUILD_GENERAL1_MEDIUM",
+          "PrivilegedMode": true,
+          "EnvironmentVariables": [
+            {
+              "Name": "FAULTLINE_BUCKET",
+              "Value": {
+                "Ref": "ArtifactBucket"
+              }
+            },
+            {
+              "Name": "AWS_DEFAULT_REGION",
+              "Value": {
+                "Ref": "AWS::Region"
+              }
+            }
+          ]
+        },
+        "LogsConfig": {
+          "CloudWatchLogs": {
+            "Status": "ENABLED",
+            "GroupName": {
+              "Ref": "BuildLogGroup"
+            }
+          }
+        },
+        "Source": {
+          "Type": "GITHUB",
+          "Location": {
+            "Ref": "RepositoryUrl"
+          },
+          "BuildSpec": "infra/aws/codebuild/buildspec.yml"
+        },
+        "SourceVersion": {
+          "Ref": "RepositoryBranch"
+        },
+        "TimeoutInMinutes": 30
+      }
+    }
+  },
+  "Outputs": {
+    "ArtifactBucketName": {
+      "Description": "S3 bucket for Faultline build and evaluation artifacts.",
+      "Value": {
+        "Ref": "ArtifactBucket"
+      }
+    },
+    "CodeBuildProjectName": {
+      "Description": "CodeBuild project that runs Faultline validation on AWS.",
+      "Value": {
+        "Ref": "ValidationProject"
+      }
+    },
+    "BuildLogGroupName": {
+      "Description": "CloudWatch Logs group for Faultline AWS builds.",
+      "Value": {
+        "Ref": "BuildLogGroup"
+      }
+    }
+  }
+}
