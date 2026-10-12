@@ -2,6 +2,8 @@
 
 Faultline is an incident-diagnosis lab built on the OpenTelemetry Demo. It injects known microservice faults, checks what the telemetry can prove, and later uses those misses to identify observability blind spots.
 
+See [docs/overview.md](docs/overview.md) for the full project overview, MVP workflow, AWS deployment path, and demo story.
+
 ## Day 1 Status
 
 The Day 1 environment is documented in [docs/day1-setup.md](docs/day1-setup.md).
