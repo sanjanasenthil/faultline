@@ -144,6 +144,10 @@ Current additions:
 - `infra/aws/codebuild/buildspec.yml` runs Faultline checks inside AWS CodeBuild.
 - `scripts/validate_aws_template.py` checks the local AWS template shape before deployment.
 
+![AWS CloudShell showing the faultline-validation CodeBuild run reaching SUCCEEDED in us-east-2](docs/images/aws-codebuild-succeeded.png)
+
+AWS CodeBuild validation run `faultline-validation` completed successfully (`SUCCEEDED`) in `us-east-2`.
+
 ## Day 14 Status
 
 The final demo report is documented in [docs/day14-final-demo.md](docs/day14-final-demo.md).
